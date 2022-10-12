@@ -1,0 +1,30 @@
+public TRRespuesta(android.content.Context context, ar.com.gmn.android.core.Respuesta r, int style) {
+    super(context);
+    turno = new android.widget.TextView(context);
+    numero = new ar.com.gmn.android.view.component.NumeroView(context, r.getNumero());
+    bien = new android.widget.TextView(context);
+    bien.setText(r.getCorrectos().toString());
+    regular = new android.widget.TextView(context);
+    regular.setText(r.getRegulares().toString());
+    android.widget.TextView _CVAR0 = turno;
+    android.content.Context _CVAR1 = context;
+    int _CVAR2 = style;
+    _CVAR0.setTextAppearance(_CVAR1, _CVAR2);
+    android.widget.TextView _CVAR3 = bien;
+    android.content.Context _CVAR4 = context;
+    int _CVAR5 = style;
+    _CVAR3.setTextAppearance(_CVAR4, _CVAR5);
+    android.widget.TextView _CVAR6 = regular;
+    android.content.Context _CVAR7 = context;
+    int _CVAR8 = style;
+    _CVAR6.setTextAppearance(_CVAR7, _CVAR8);
+    numero.setTextAppearance(context, style);
+    turno.setGravity(android.view.Gravity.CENTER);
+    bien.setGravity(android.view.Gravity.CENTER);
+    regular.setGravity(android.view.Gravity.CENTER);
+    numero.setGravity(android.view.Gravity.CENTER);
+    this.addView(turno);
+    this.addView(numero);
+    this.addView(bien);
+    this.addView(regular);
+}

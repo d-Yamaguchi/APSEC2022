@@ -1,0 +1,43 @@
+@java.lang.Override
+protected void onPostExecute(java.lang.Void aVoid) {
+    super.onPostExecute(aVoid);
+    android.util.Log.i("desz", description);
+    android.util.Log.i("rus", runtime);
+    Runtime.setText(runtime);
+    Genre.setText(genres);
+    Lang.setText(language);
+    Budget.setText(budget);
+    Revenue.setText(revenue);
+    // actionBar.setTitle(title);
+    java.lang.String image = getIntent().getStringExtra("backd");
+    android.util.Log.i("hghg", image);
+    movieid = getIntent().getStringExtra("id");
+     _CVAR1 = getIntent();
+    java.lang.String _CVAR2 = "title";
+    java.lang.String title = _CVAR1.getStringExtra(_CVAR2);
+    java.lang.String _CVAR3 = title;
+    android.widget.TextView _CVAR0 = titleTextView;
+    android.text.Spanned _CVAR4 = android.text.Html.fromHtml(_CVAR3);
+    _CVAR0.setText(_CVAR4);
+     _CVAR6 = getIntent();
+    java.lang.String _CVAR7 = "overview";
+    java.lang.String overview = _CVAR6.getStringExtra(_CVAR7);
+    java.lang.String _CVAR8 = overview;
+    android.widget.TextView _CVAR5 = OverviewText;
+    android.text.Spanned _CVAR9 = android.text.Html.fromHtml(_CVAR8);
+    _CVAR5.setText(_CVAR9);
+     _CVAR11 = getIntent();
+    java.lang.String _CVAR12 = "votes";
+    java.lang.String votes = _CVAR11.getStringExtra(_CVAR12);
+    java.lang.String _CVAR13 = votes;
+    android.widget.TextView _CVAR10 = UserRating;
+    android.text.Spanned _CVAR14 = android.text.Html.fromHtml(_CVAR13);
+    _CVAR10.setText(_CVAR14);
+     _CVAR16 = getIntent();
+    java.lang.String _CVAR17 = "r_dates";
+    java.lang.String r_dates = _CVAR16.getStringExtra(_CVAR17);
+    java.lang.String _CVAR18 = r_dates;
+    android.widget.TextView _CVAR15 = ReleaseDate;
+    android.text.Spanned _CVAR19 = android.text.Html.fromHtml(_CVAR18);
+    _CVAR15.setText(_CVAR19);
+}

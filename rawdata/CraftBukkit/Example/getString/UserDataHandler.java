@@ -1,0 +1,310 @@
+/*
+ * @author     ucchy
+ * @license    GPLv3
+ * @copyright  Copyright ucchy 2013
+ */
+package com.github.ucchyocean.mdi;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+
+import com.github.ucchyocean.mdi.item.ItemConfigParseException;
+
+/**
+ * @author ucchy
+ * ユーザー情報をハンドリングするためのクラス
+ */
+public class UserDataHandler {
+
+    private static final String LIST_START =
+            "&7----- Player: &c%-15s&7  Page (&c%d&7/&c%d&7) -----";
+    private static final String LIST_END =
+            "&7----------------------------------------";
+    private static final String SHOW_START =
+            "&7----- Player: &c%-15s&7  ID: &c%d&7 ----------";
+    private static final String SHOW_END =
+            "&7----------------------------------------";
+
+    private static final String USER_FOLDER = "data";
+    protected static final int MAX_LOG_SIZE = 1000;
+    protected static final int PAGE_SIZE = 10;
+
+    private SimpleDateFormat keyDateFormat;
+    private SimpleDateFormat logDateFormat;
+    private File folder;
+
+    /**
+     * コンストラクタ
+     * @param dataFolder プラグインのデータフォルダ
+     */
+    public UserDataHandler(File dataFolder) {
+
+        keyDateFormat = new SimpleDateFormat("yyMMddHHmmssSSS");
+        logDateFormat = new SimpleDateFormat("yy-MM-dd,HH:mm:ss");
+        folder = new File(dataFolder, USER_FOLDER);
+        if ( !folder.exists() ) {
+            folder.mkdirs();
+        }
+    }
+
+    /**
+     * ユーザーのログを追加する。MAX_LOG_SIZEを超えた場合、古いログが削除される。
+     * @param player プレイヤー
+     * @param deathMessage 記録するデスメッセージ
+     */
+    public void addUserLog(Player player, String deathMessage) {
+
+        Date date = new Date();
+        String key = keyDateFormat.format(date);
+        String time = logDateFormat.format(date);
+
+        // ファイルからロード（なければ作る）
+        File file = new File(folder, player.getName() + ".yml");
+        if ( !file.exists() ) {
+            YamlConfiguration config = new YamlConfiguration();
+            try {
+                config.save(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        // データを追加
+        config.set(key + ".time", time);
+        config.set(key + ".msg", deathMessage);
+
+        PlayerInventory inv = player.getInventory();
+        DIUtility.convInventoryItemsToSection(
+                inv, config.createSection(key + ".deathItems"));
+        DIUtility.convInventoryArmorsToSection(
+                inv, config.createSection(key + ".deathArmors"));
+
+        // ログデータがMAX値を超える場合は、古いものを削除する
+        Set<String> dataKeys = config.getKeys(false);
+        if ( dataKeys.size() > MAX_LOG_SIZE ) {
+
+            // ソート
+            List<String> sortedKeys = new ArrayList<String>(dataKeys);
+            Collections.sort(sortedKeys);
+
+            while ( sortedKeys.size() > MAX_LOG_SIZE ) {
+                String oldKey = sortedKeys.get(0);
+                config.set(oldKey, null); // 削除
+                sortedKeys.remove(0);
+            }
+        }
+
+        // 保存
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * ユーザーログを取得する
+     * @param name ユーザー名
+     * @param id ログID
+     * @return ログ情報
+     */
+    public HashMap<String, ItemStack> getUserLog(String name, int id) throws ItemConfigParseException {
+
+        // ファイルからロード（なければnullを返して終了）
+        File file = new File(folder, name + ".yml");
+        if ( !file.exists() ) {
+            return null;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        // 指定したIDがログの数より多ければ、nullを返して終了
+        Set<String> dataKeys = config.getKeys(false);
+        if ( dataKeys.size() < id ) {
+            return null;
+        }
+
+        // ソート
+        List<String> sortedKeys = new ArrayList<String>(dataKeys);
+        Collections.sort(sortedKeys);
+        Collections.reverse(sortedKeys);
+
+        // 取得
+        ConfigurationSection is =
+                config.getConfigurationSection(sortedKeys.get(id - 1) + ".deathItems");
+        ConfigurationSection as =
+                config.getConfigurationSection(sortedKeys.get(id - 1) + ".deathArmors");
+        HashMap<String, ItemStack> items = DIUtility.convSectionToItemStack(is);
+        HashMap<String, ItemStack> armors = DIUtility.convSectionToItemStack(as);
+
+        // マージ
+        for ( String key : armors.keySet() ) {
+            items.put(key, armors.get(key));
+        }
+
+        return items;
+    }
+
+    /**
+     * ユーザーログの一覧表示を取得する
+     * @param name ユーザー名
+     * @param page 表示するページ
+     * @return ログ一覧
+     */
+    public ArrayList<String> getListUserLog(String name, int page) {
+
+        // ファイルからロード（なければnullを返して終了）
+        File file = new File(folder, name + ".yml");
+        if ( !file.exists() ) {
+            return null;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        int start = (page - 1) * PAGE_SIZE + 1;
+        int end = page * PAGE_SIZE;
+
+        // ソート
+        Set<String> dataKeys = config.getKeys(false);
+        List<String> sortedKeys = new ArrayList<String>(dataKeys);
+        Collections.sort(sortedKeys);
+        Collections.reverse(sortedKeys);
+        int pages = (sortedKeys.size() / PAGE_SIZE) + 1;
+
+        ArrayList<String> messages = new ArrayList<String>();
+        messages.add(String.format(LIST_START, name, page, pages));
+        for ( int id=start; id<=end; id++ ) {
+            if ( sortedKeys.size() >= id ) {
+                String key = sortedKeys.get(id - 1);
+                ConfigurationSection section = config.getConfigurationSection(key);
+                messages.addAll(convToListMessage(id, section));
+            }
+        }
+        messages.add(LIST_END);
+
+        return Utility.replaceColorCode(messages);
+    }
+
+    /**
+     * ユーザーログの詳細表示を取得する
+     * @param name ユーザー名
+     * @param id 表示するログID
+     * @return ログ詳細
+     */
+    public ArrayList<String> getShowUserLog(String name, int id) {
+
+        // ファイルからロード（なければnullを返して終了）
+        File file = new File(folder, name + ".yml");
+        if ( !file.exists() ) {
+            return null;
+        }
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        // 指定したIDがログの数より多ければ、nullを返して終了
+        Set<String> dataKeys = config.getKeys(false);
+        if ( dataKeys.size() < id ) {
+            return null;
+        }
+
+        List<String> sortedKeys = new ArrayList<String>(dataKeys);
+        Collections.sort(sortedKeys);
+        Collections.reverse(sortedKeys);
+
+        ArrayList<String> messages = new ArrayList<String>();
+        messages.add(String.format(SHOW_START, name, id));
+
+        String key = sortedKeys.get(id - 1);
+        ConfigurationSection section = config.getConfigurationSection(key);
+        messages.addAll(convToShowMessage(section));
+
+        messages.add(SHOW_END);
+
+        return Utility.replaceColorCode(messages);
+    }
+
+    /**
+     * 指定したコンフィグセクションを、一覧形式に変換して返す
+     * @param id ログID（メッセージの内容に使われる）
+     * @param section セクション
+     * @return 一覧形式
+     */
+    private ArrayList<String> convToListMessage(int id, ConfigurationSection section) {
+
+        String time = section.getString("time", "");
+        String msg = section.getString("msg", "");
+        int itemCount = section.getConfigurationSection("deathItems").getKeys(false).size();
+        int armorCount = section.getConfigurationSection("deathArmors").getKeys(false).size();
+
+        ArrayList<String> result = new ArrayList<String>();
+        result.add(String.format("&7| ID:&c%d&7 %s  items:&c%d&7, armors:&c%d&7",
+                id, time, itemCount, armorCount) );
+        result.add("&7|   &c" + msg);
+
+        return result;
+    }
+
+    /**
+     * 指定したコンフィグセクションを、詳細形式に変換して返す
+     * @param section セクション
+     * @return 詳細形式
+     */
+    private ArrayList<String> convToShowMessage(ConfigurationSection section) {
+
+        String time = section.getString("time", "");
+        String msg = section.getString("msg", "");
+
+        try {
+            HashMap<String, ItemStack> items =
+                    DIUtility.convSectionToItemStack(section.getConfigurationSection("deathItems"));
+            HashMap<String, ItemStack> armors =
+                    DIUtility.convSectionToItemStack(section.getConfigurationSection("deathArmors"));
+
+            ArrayList<String> result = new ArrayList<String>();
+            result.add("&7| &c" + time);
+            result.add("&7|   &c" + msg);
+            if ( items.size() > 0 ) {
+                result.add("&7| items: ");
+                for ( String key : items.keySet() ) {
+                    result.add("&7|   " + key + ":");
+                    ItemStack item = items.get(key);
+                    result.addAll( DIUtility.getItemInfoWithPrefix(item, "&7|     &f") );
+                }
+            }
+            if ( items.size() > 0 ) {
+                result.add("&7| armors: ");
+                for ( String key : armors.keySet() ) {
+                    result.add("&7|   " + key + ":");
+                    ItemStack item = armors.get(key);
+                    result.addAll( DIUtility.getItemInfoWithPrefix(item, "&7|     &f") );
+                }
+            }
+
+            return result;
+
+        } catch (ItemConfigParseException e) {
+            ArrayList<String> result = new ArrayList<String>();
+            result.add("&a" + e.toString());
+            return result;
+        }
+    }
+
+    /**
+     * 最大のページ数
+     * @return 最大のページ数
+     */
+    public int getMaxOfPage() {
+        return MAX_LOG_SIZE / PAGE_SIZE;
+    }
+}

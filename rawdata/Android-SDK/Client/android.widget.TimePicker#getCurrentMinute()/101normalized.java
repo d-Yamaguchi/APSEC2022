@@ -1,0 +1,38 @@
+public void onClick(android.view.View v) {
+    android.widget.TimePicker _CVAR2 = bgnTimeView;
+    void _CVAR4 = _CVAR1;
+    final android.widget.TimePicker bgnTimeView = ((android.widget.TimePicker) (findViewById(_CVAR4)));
+    android.widget.TimePicker _CVAR5 = bgnTimeView;
+    com.dodsoneng.scheduler.MyAlarm _CVAR0 = _alarm;
+    java.lang.Integer _CVAR3 = _CVAR2.getCurrentHour();
+    java.lang.Integer _CVAR6 = _CVAR5.getCurrentMinute();
+    long bgnTimeMS = _CVAR0.getTimeInMilisecs(_CVAR3, _CVAR6);
+    android.widget.TimePicker _CVAR9 = endTimeView;
+    void _CVAR11 = _CVAR8;
+    final android.widget.TimePicker endTimeView = ((android.widget.TimePicker) (findViewById(_CVAR11)));
+    android.widget.TimePicker _CVAR12 = endTimeView;
+    com.dodsoneng.scheduler.MyAlarm _CVAR7 = _alarm;
+    java.lang.Integer _CVAR10 = _CVAR9.getCurrentHour();
+    java.lang.Integer _CVAR13 = _CVAR12.getCurrentMinute();
+    long endTimeMS = _CVAR7.getTimeInMilisecs(_CVAR10, _CVAR13);
+    long dt = bgnTimeMS - java.lang.System.currentTimeMillis();
+    android.util.Log.d(TAG, "onClick(start)");
+    void _CVAR1 = R.id.timePicker1;
+    void _CVAR15 = _CVAR1;
+    final android.widget.TimePicker bgnTimeView = ((android.widget.TimePicker) (findViewById(_CVAR15)));
+    android.widget.TimePicker _CVAR16 = bgnTimeView;
+    java.lang.Integer _CVAR17 = _CVAR16.getCurrentMinute();
+    java.lang.String _CVAR14 = TAG;
+    java.lang.String _CVAR18 = (("onClick(begin time): " + bgnTimeView.getCurrentHour()) + ":") + _CVAR17;
+    android.util.Log.d(_CVAR14, _CVAR18);
+    void _CVAR8 = R.id.timePicker2;
+    void _CVAR20 = _CVAR8;
+    final android.widget.TimePicker endTimeView = ((android.widget.TimePicker) (findViewById(_CVAR20)));
+    android.widget.TimePicker _CVAR21 = endTimeView;
+    java.lang.Integer _CVAR22 = _CVAR21.getCurrentMinute();
+    java.lang.String _CVAR19 = TAG;
+    java.lang.String _CVAR23 = (("onClick(end time)  : " + endTimeView.getCurrentHour()) + ":") + _CVAR22;
+    android.util.Log.d(_CVAR19, _CVAR23);
+    android.util.Log.d(TAG, (((("onClick(begin time): tmsecs=" + bgnTimeMS) + " systime=") + java.lang.System.currentTimeMillis()) + " dt=") + dt);
+    _alarm.setAlarm(_this, bgnTimeMS, endTimeMS);
+}
